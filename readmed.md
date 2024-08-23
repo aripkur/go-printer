@@ -1,0 +1,2 @@
+REST API DIRECT PRINT IN WINDOWS
+klik kanan ServicePrint.exe => pilih run administrator => cek di task manager menu service. jika ada aaaServicePrintV2, buka terminal ketik curl http://localhost:3000 pencet enter
