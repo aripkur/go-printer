@@ -14,7 +14,7 @@ import (
 
 const (
 	SERVICE_NAME = "aaaServicePrintV2"
-	PORT         = "3000"
+	PORT         = "8888"
 )
 
 type myService struct{}

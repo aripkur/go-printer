@@ -2,8 +2,10 @@ package printer
 
 import (
 	"fmt"
-	"io"
+	"log"
 	"os"
+	"os/exec"
+	"path/filepath"
 
 	"github.com/alexbrainman/printer"
 	"github.com/gofiber/fiber/v2"
@@ -23,11 +25,10 @@ func (p Printer) Print(filePath string, fileName string) error {
 	}
 	defer prn.Close()
 
-	f, err := os.Open(filePath)
+	f, err := os.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("gagal membuka file: %v", err)
 	}
-	defer f.Close()
 
 	// Mengirimkan nama dokumen dan mode RAW
 	err = prn.StartDocument(fileName, "RAW")
@@ -36,17 +37,67 @@ func (p Printer) Print(filePath string, fileName string) error {
 	}
 	defer prn.EndDocument()
 
+	// err = prn.StartPage()
+	// if err != nil {
+	// 	return fmt.Errorf("gagal memulai halaman: %v", err)
+	// }
+	// defer prn.EndPage()
+
+	// Menulis data PDF ke printer
+	_, err = prn.Write(f)
+	if err != nil {
+		log.Fatalf("gagal menulis ke printer: %v", err)
+	}
+
+	return nil
+}
+func (p Printer) PrintTest(filePath string, fileName string) error {
+	pname, err := printer.Default()
+	if err != nil {
+		return fmt.Errorf("gagal menemukan printer default: %v", err)
+	}
+
+	prn, err := printer.Open(pname)
+	if err != nil {
+		return fmt.Errorf("gagal membuka printer: %v", err)
+	}
+	defer prn.Close()
+
+	err = prn.StartDocument("my document", "RAW")
+	if err != nil {
+		return fmt.Errorf("StartDocument failed: %v", err)
+	}
+	defer prn.EndDocument()
 	err = prn.StartPage()
 	if err != nil {
-		return fmt.Errorf("gagal memulai halaman: %v", err)
+		return fmt.Errorf("StartPage failed: %v", err)
 	}
-	defer prn.EndPage()
-
-	_, err = io.Copy(prn, f)
+	fmt.Fprintf(prn, "Hello")
+	err = prn.EndPage()
 	if err != nil {
-		return fmt.Errorf("gagal menulis ke printer: %v", err)
+		return fmt.Errorf("EndPage failed: %v", err)
 	}
 
+	return nil
+}
+func (p Printer) PrintSpooler(filePath string, fileName string) error {
+	// Menemukan path ke SPool.exe di direktori saat ini
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("gagal mendapatkan path saat ini: %v", err)
+	}
+	spoolPath := filepath.Join(currentDir, "spool.exe")
+
+	// Membangun perintah untuk mencetak
+	cmd := exec.Command(spoolPath, filePath)
+
+	// Menjalankan perintah
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("gagal mencetak dengan spool.exe: %v, output: %s", err, string(output))
+	}
+
+	fmt.Println("Print command executed successfully:", string(output))
 	return nil
 }
 func (p Printer) GetPrinters() ([]string, error) {
@@ -79,15 +130,15 @@ func (p Printer) RunServer(port string) {
 			})
 		}
 
-		if err := p.Print(filePath, file.Filename); err != nil {
+		if err := p.PrintSpooler(filePath, file.Filename); err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"status":  "error",
 				"message": "Gagal mencetak file",
 				"error":   err.Error(),
 			})
 		}
-
-		os.Remove(filePath)
+		fmt.Println(file.Filename)
+		// os.Remove(filePath)
 
 		return c.JSON(fiber.Map{
 			"status":  "success",
