@@ -100,6 +100,25 @@ func (p Printer) PrintSpooler(filePath string, fileName string) error {
 	fmt.Println("Print command executed successfully:", string(output))
 	return nil
 }
+func (p Printer) PrintPdfToPrinter(filePath string, fileName string) error {
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("gagal mendapatkan path saat ini: %v", err)
+	}
+	toolPath := filepath.Join(currentDir, "PDFtoPrinter.exe")
+
+	// Membangun perintah untuk mencetak
+	cmd := exec.Command(toolPath, filePath)
+
+	// Menjalankan perintah
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("gagal mencetak : %v, output: %s", err, string(output))
+	}
+
+	fmt.Println("Print command executed successfully:", string(output))
+	return nil
+}
 func (p Printer) GetPrinters() ([]string, error) {
 	printers, err := printer.ReadNames()
 	if err != nil {
