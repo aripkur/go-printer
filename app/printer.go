@@ -1,4 +1,4 @@
-package printer
+package app
 
 import (
 	"fmt"
@@ -34,14 +34,6 @@ func (p Printer) List() ([]string, error) {
 	return prns, nil
 }
 
-func (p Printer) Default() (string, error) {
-	printers, err := printer.Default()
-	if err != nil {
-		return "", fmt.Errorf("gagal mendapatkan default printer: %v", err)
-	}
-
-	return printers, nil
-}
 func (p Printer) PrintPdf(filePath string) error {
 	currentDir, err := os.Getwd()
 	if err != nil {
