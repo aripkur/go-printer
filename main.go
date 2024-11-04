@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	SERVICE_NAME = "aaaServicePrintV2"
+	SERVICE_NAME = "aaaPDFprint"
 	PORT         = "8888"
 )
 

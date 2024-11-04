@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"time"
 
 	"github.com/alexbrainman/printer"
 	"github.com/gofiber/fiber/v2"
@@ -33,7 +34,6 @@ func (p Printer) List() ([]string, error) {
 
 	return prns, nil
 }
-
 func (p Printer) Default() (string, error) {
 	printers, err := printer.Default()
 	if err != nil {
@@ -42,18 +42,30 @@ func (p Printer) Default() (string, error) {
 
 	return printers, nil
 }
-func (p Printer) PrintPdf(filePath string) error {
-	currentDir, err := os.Getwd()
+func (p Printer) PrintPdf(filePath string, printerName string) error {
+
+	exePath, err := os.Executable()
 	if err != nil {
 		return fmt.Errorf("gagal mendapatkan path saat ini: %v", err)
 	}
-	toolPath := filepath.Join(currentDir, "PDFtoPrinter.exe")
+	exeDir := filepath.Dir(exePath)
+	toolPath := filepath.Join(exeDir, "PDFtoPrinter.exe")
 
-	cmd := exec.Command(toolPath, filePath)
+	// PDFXCview.exe
+	if printerName == "DEFAULT" {
+		cmd := exec.Command(toolPath, filePath)
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("gagal mencetak : %v, output: %s filepath: %s", err, string(output), filePath)
+		}
 
+		return nil
+	}
+
+	cmd := exec.Command(toolPath, filePath, printerName)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("gagal mencetak : %v, output: %s", err, string(output))
+		return fmt.Errorf("gagal mencetak : %v, output: %s filepath: %s", err, string(output), filePath)
 	}
 
 	return nil
@@ -72,7 +84,30 @@ func (p Printer) RunServer(port string) {
 			})
 		}
 
-		filePath := fmt.Sprintf("./%s", file.Filename)
+		// Tentukan folder penyimpanan
+		exePath, err := os.Executable()
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"status":  "error",
+				"message": "Gagal mendapatkan path executable",
+				"error":   err,
+			})
+		}
+		exeDir := filepath.Dir(exePath)
+		folderPath := filepath.Join(exeDir, "files")
+
+		// Buat folder jika belum ada
+		if err := os.MkdirAll(folderPath, os.ModePerm); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"status":  "error",
+				"message": "Gagal membuat folder penyimpanan",
+				"error":   err.Error(),
+			})
+		}
+
+		// Tentukan path lengkap file
+		timestamp := time.Now().Format("20060102150405.000")
+		filePath := filepath.Join(folderPath, fmt.Sprintf("%s_%s", timestamp, file.Filename))
 		if err := c.SaveFile(file, filePath); err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"status":  "error",
@@ -81,7 +116,12 @@ func (p Printer) RunServer(port string) {
 			})
 		}
 
-		if err := p.PrintPdf(filePath); err != nil {
+		printerName := c.FormValue("printer")
+		if printerName == "" {
+			printerName = "DEFAULT"
+		}
+
+		if err := p.PrintPdf(filePath, printerName); err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"status":  "error",
 				"message": "Gagal mencetak file",
@@ -110,5 +150,6 @@ func (p Printer) RunServer(port string) {
 			"printers": printers,
 		})
 	})
+
 	app.Listen(fmt.Sprintf(":%s", port))
 }

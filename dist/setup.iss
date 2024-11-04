@@ -2,12 +2,14 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 [Setup]
-AppName=aaaServicePrintV2
+AppName=aaaPDFprint
 AppVersion=1.0
-DefaultDirName={pf}\aaaServicePrintV2
+AppPublisher=arip.rsuislamboyolali
+AppPublisherURL=https://rsuislamboyolali.co.id/
+DefaultDirName={pf}\aaaPDFprint
 DefaultGroupName=aaaServicePrintV2
 OutputDir=output
-OutputBaseFilename=aaaServicePrintV2_RUN_ADMIN
+OutputBaseFilename=aaaPDFprint_RUN_ADMIN
 Compression=lzma
 SolidCompression=yes
 PrivilegesRequired=admin
@@ -18,4 +20,4 @@ Source: "PDFtoPrinter.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 
 [Run]
-Filename: "{app}\main.exe"; Description: "Launch aaaServicePrintV2"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\main.exe"; Description: "Launch aaaPDFprint"; Flags: nowait postinstall skipifsilent
